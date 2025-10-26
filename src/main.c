@@ -13,6 +13,7 @@ ip4_addr_t ipaddr, netmask, gw;
 static void client_start_callback(void *arg)
 {
 	printf("Running client.\n");
+	// Client starts here.
 	tcp_client_start();
 }
 
@@ -22,11 +23,8 @@ void* run_client(void *arg)
 	sleep(2);
 	printf("Running the client in tcpip thread.\n");
 	printf("Client %d thread id is %ld\n", id, pthread_self());
+	// Pass the client_start_callback to tcpip_callback to start the client in a secure lwip thread.
 	tcpip_callback(client_start_callback, NULL);
-
-//	while(1) {
-//		sys_check_timeouts();
-//	}
 
 }
 
@@ -34,12 +32,9 @@ void run_server(void *arg)
 {
 
 	printf("Running the server thread.\n");
-
+	// Server starts here.
 	tcpecho_raw_init();
 
-//	while(1) {
-//		sys_check_timeouts();	}
-//	}
 }
 
 static void lwip_netif_init(void *arg)
@@ -56,25 +51,21 @@ static void lwip_netif_init(void *arg)
 
 int main(void)
 {
-
+	// Passing the lwip_netif_init inside tcpip_init since we use NO_SYS = 0 (multiple lwip threads possible).
 	tcpip_init(lwip_netif_init, NULL);
 	printf("Tcpip init done.\n");
 
 	pthread_t client_thread_1, client_thread_2;
 
-	// Start the server thread.
-//	pthread_create(&server_thread, NULL, run_server, NULL);
-	printf("Before server.\n");
+	// Start the server in a lwip thread using tcpip_callback func.
 	tcpip_callback(run_server, NULL);
-	printf("After server.\n");
-	// Start the client thread.
+
+	// Start the client threads. Client threads accept int arg to indicate client number.
+	// Nothing fancy here, just accepting int id to differentiate between clients for multi-client testing.
 	pthread_create(&client_thread_1, NULL, run_client, 1);
 	pthread_create(&client_thread_2, NULL, run_client, 2);
-//	pthread_join(client_thread, NULL);
-//	pthread_join(server_thread, NULL);
 	
 	while(1) {
-//		sys_check_timeouts();
 		sys_msleep(1000);
 	}
 
